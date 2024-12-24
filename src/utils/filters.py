@@ -138,7 +138,6 @@ def punctuation_normalizer(data):
     return processed_data
 
 def apply_all_filterings(data):
-    print("Before: ", len(data))
     data = unique_parallel_sentence_filter(data)
     data = equal_source_target_filter(data)
     data = multiple_sources_targets_filter(data)
@@ -146,7 +145,6 @@ def apply_all_filterings(data):
     data = repeating_tokens_filter(data)
     data = correct_language_filter(data)
     data = punctuation_normalizer(data)
-    print("After: ", len(data))
     return data 
 
 

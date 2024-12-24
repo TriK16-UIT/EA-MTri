@@ -13,4 +13,8 @@ def save_json(data, output_file):
         for entry in data:
             f.write(json.dumps(entry, ensure_ascii=False) + '\n')
 
+def remove_gap(text):
+    text = " ".join(text.split())
+    return text
+
 
