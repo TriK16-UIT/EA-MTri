@@ -1,6 +1,5 @@
 __pycache__
 .venv
-test*.py
 Data
 results_mt5small_mt
 Dataset
