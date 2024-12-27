@@ -17,38 +17,27 @@ def process_language_folder(input_folder, output_folder):
     train_NER_file = os.path.join(output_folder, "train_NER.jsonl")
     train_EA_MT_file = os.path.join(output_folder, "train_EA_MT.jsonl")
     raw_data = load_json(train_file)
-    
-    #Translation task
     preprocessed_data = process_language_data(raw_data)
+    
+    #Translation task - keep plain text in both side
     instructed_plain_data = add_task_instructions(preprocessed_data, task_type="translation")
     save_json(instructed_plain_data, train_MT_file)
 
     initialize_spacy_models()
 
-    #NER recognization task
+    #NER recognization task - add NE tags on the target side
     ner_data = build_ner_dataset(preprocessed_data)
     ner_tagged_target_data = add_ner_tags(ner_data, ner_target="target")
     ner_tagged_target_data = remove_and_replace_tags(ner_tagged_target_data, ner_target="target")
     instructed_ner_tagged_target_data = add_task_instructions(ner_tagged_target_data, task_type="NER")
     save_json(instructed_ner_tagged_target_data, train_NER_file)
 
-    #EA-MT task
-    ner_tagged_both_data = add_ner_tags(preprocessed_data, ner_target="target")
-    ner_tagged_both_data = add_ner_tags(ner_tagged_both_data, ner_target="source")
-    ner_tagged_both_data = remove_and_replace_tags(ner_tagged_both_data, ner_target="target")
-    ner_tagged_both_data = remove_and_replace_tags(ner_tagged_both_data, ner_target="source")
-    ner_tagged_both_data = remove_non_matching_tags(ner_tagged_both_data)
-    instructed_ner_tagged_both_data = add_task_instructions(ner_tagged_both_data, task_type="EA_MT")
-    save_json(instructed_ner_tagged_both_data, train_EA_MT_file)
-
-    # ner_tagged_source_data = add_ner_tags(preprocessed_data, ner_target="source")
-    # instructed_ner_tagged_source_data = add_task_instructions(ner_tagged_source_data, task_type="EA_MT")
-    # save_json(instructed_ner_tagged_source_data, train_EA_MT_file)
-
-    # ner_tagged_target_data = add_ner_tags(preprocessed_data, ner_target="target")
-    # instructed_ner_tagged_target_data = add_task_instructions(ner_tagged_target_data, task_type="NER")
-    # save_json(instructed_ner_tagged_target_data, train_NER_file)
-
+    #EA-MT task - add NE tags on the source side
+    ner_tagged_source_data = add_ner_tags(preprocessed_data, ner_target="source")
+    ner_tagged_source_data = remove_and_replace_tags(ner_tagged_source_data, ner_target="source")
+    # ner_tagged_both_data = remove_non_matching_tags(ner_tagged_both_data)
+    instructed_ner_tagged_source_data = add_task_instructions(ner_tagged_source_data, task_type="EA_MT")
+    save_json(instructed_ner_tagged_source_data, train_EA_MT_file)
  
 def process_all_languages():
     for lang_folder in tqdm(os.listdir(RAW_TRAIN_PATH)):
@@ -70,6 +59,7 @@ def build_dataset():
             for item in data:
                 all_data.append({"src": item["source"], "trg": item["target"]})
     
+    os.makedirs(DATASET_PATH, exist_ok=True)
     output_file = os.path.join(DATASET_PATH, "train.jsonl")
     save_json(all_data, output_file)
     print(f"Grouped all JSONL data into {output_file}")

@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
  
 from transformers import (
-    AdamW,
+    AutoTokenizer,
     T5Tokenizer,
     MT5ForConditionalGeneration,
     TrainingArguments,
@@ -29,8 +29,8 @@ MAX_LENGTH = 256
 
 bleu = evaluate.load("bleu")
 
-model = MT5ForConditionalGeneration.from_pretrained(MODEL)
-tokenizer = T5Tokenizer.from_pretrained(MODEL, use_fast=True)
+model = MT5ForConditionalGeneration.from_pretrained("google/mt5-small")
+tokenizer = T5Tokenizer.from_pretrained("google/mt5-small")
 
 # new tokens
 new_tokens = ["<LOC>","</LOC>","<ORG>","</ORG>","<PERSON>","</PERSON>"]
@@ -43,6 +43,9 @@ model.resize_token_embeddings(len(tokenizer))
 
 def compute_metrics(eval_preds):
     preds, labels = eval_preds
+
+    print(preds)
+    print(labels)
     
     if isinstance(preds, tuple):
         preds = preds[0]
@@ -71,15 +74,21 @@ def process_data_to_model_inputs(batch):
   batch["labels"] = inputs.labels
   return batch
 
-data = load_json("Data/preprocessed/train/de/train_NER.jsonl")
+# data = load_json("Data/preprocessed/train/de/train_NER.jsonl")
+
+data = load_json("Dataset/train.jsonl")
 
 #test
-# data = data[0:100]
+data = data[0:100]
 
-file_data = {"src": [item["source"] for item in data], "trg": [item["target"] for item in data]}
+# file_data = {"src": [item["source"] for item in data], "trg": [item["target"] for item in data]}
+file_data = {
+    "src": [item["src"] for item in data],
+    "trg": [item["trg"] for item in data]
+}
 dataset = Dataset.from_dict(file_data)
 
-train_test_split = dataset.train_test_split(test_size=0.02, seed=42)
+train_test_split = dataset.train_test_split(test_size=0.2, seed=42)
 train_data = train_test_split["train"]
 val_data = train_test_split["test"]
 
@@ -114,100 +123,24 @@ total_trainable_params = sum(
     p.numel() for p in model.parameters() if p.requires_grad)
 print(f"{total_trainable_params:,} training parameters.")
 
-# # train_dataloader = DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True)
-# # val_dataloader = DataLoader(val_data, batch_size=BATCH_SIZE)
-
-# # Define optimizer
-# optimizer = AdamW(model.parameters(), lr=1e-4, weight_decay=0.01)
-
-# def train(model, train_dataloader, optimizer, epoch):
-#     model.train()
-#     total_loss = 0
-    
-#     for batch in tqdm(train_dataloader, desc=f"Training Epoch {epoch}"):
-#         optimizer.zero_grad()
-        
-#         # Move batch to DEVICE
-#         input_ids = batch['input_ids'].to(DEVICE)
-#         attention_mask = batch['attention_mask'].to(DEVICE)
-#         labels = batch['labels'].to(DEVICE)
-
-#         # Forward pass
-#         outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
-#         loss = outputs.loss
-#         total_loss += loss.item()
-
-#         # Backward pass and optimization
-#         loss.backward()
-#         optimizer.step()
-
-#     avg_loss = total_loss / len(train_dataloader)
-#     print(f"Epoch {epoch} - Training Loss: {avg_loss:.4f}")
-#     return avg_loss
-
-# # Validation loop
-# def evaluate(model, val_dataloader):
-#     model.eval()
-#     total_loss = 0
-#     predictions, references = [], []
-
-#     with torch.no_grad():
-#         for batch in tqdm(val_dataloader, desc="Evaluating"):
-#             # Move batch to DEVICE
-#             input_ids = batch['input_ids'].to(DEVICE)
-#             attention_mask = batch['attention_mask'].to(DEVICE)
-#             labels = batch['labels'].to(DEVICE)
-
-#             # Forward pass
-#             outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
-#             loss = outputs.loss
-#             total_loss += loss.item()
-
-#             # Generate predictions
-#             generated_tokens = model.generate(input_ids=input_ids, attention_mask=attention_mask, max_length=MAX_LENGTH)
-
-#             predictions.extend(generated_tokens.cpu().numpy())
-#             references.extend(labels.cpu().numpy())
-
-#     predictions = np.array(predictions)
-#     references = np.array(references)
-
-#     # Compute metrics
-#     # predictions = np.concatenate(predictions)
-#     # references = np.concatenate(references)
-#     metrics = compute_metrics((predictions, references))
-
-#     avg_loss = total_loss / len(val_dataloader)
-#     print(f"Validation Loss: {avg_loss:.4f}, BLEU: {metrics['bleu']:.4f}")
-
-#     return avg_loss, metrics
-
-# # Training and evaluation
-# num_epochs = EPOCHS
-# for epoch in range(1, num_epochs + 1):
-#     train_loss = train(model, train_dataloader, optimizer, epoch)
-#     val_loss, val_bleu = evaluate(model, val_dataloader)
-
-#     # Save model checkpoint
-#     torch.save(model.state_dict(), f"{OUT_DIR}/mt5_epoch_{epoch}.pt")
-
 training_args = Seq2SeqTrainingArguments(
-    run_name=MODEL,
-    evaluation_strategy="epoch",
-    save_strategy="epoch",
-    learning_rate=0.0001,
+    output_dir=OUT_DIR,
+    logging_dir=OUT_DIR,
+    num_train_epochs=EPOCHS,
     per_device_train_batch_size=BATCH_SIZE,
     per_device_eval_batch_size=BATCH_SIZE,
-    weight_decay=0.01,
+    evaluation_strategy="epoch",
+    save_strategy="epoch",
     save_total_limit=3,
-    num_train_epochs=EPOCHS,
-    logging_dir=OUT_DIR,
-    output_dir=OUT_DIR,
+    learning_rate=0.0001,
+    weight_decay=0.01,
     generation_max_length=128,
+    fp16=True,
     load_best_model_at_end=True,
-    auto_find_batch_size=True,
     predict_with_generate=True,
-    metric_for_best_model='bleu'    
+    auto_find_batch_size=True,
+    metric_for_best_model='bleu',
+    run_name=MODEL,
 )
 
 trainer = Seq2SeqTrainer(
