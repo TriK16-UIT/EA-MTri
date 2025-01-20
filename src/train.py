@@ -1,36 +1,32 @@
-import os
 import torch
 import evaluate
 import numpy as np
 from utils.utils import load_json
-from torch.utils.data import DataLoader
-from tqdm import tqdm
  
 from transformers import (
-    AutoTokenizer,
     T5Tokenizer,
     MT5ForConditionalGeneration,
-    TrainingArguments,
-    Trainer,
-    EarlyStoppingCallback,
     Seq2SeqTrainingArguments,
     Seq2SeqTrainer
 )
 
-from datasets import load_dataset
 from datasets import Dataset
 
+from config import DATASET_PATH
+
+
+#SETTINGS
 MODEL = 'google/mt5-small'
 BATCH_SIZE = 4
 NUM_PROCS = 16
-EPOCHS = 10
+EPOCHS = 5
 OUT_DIR = 'results_mt5small_mt'
 MAX_LENGTH = 256 
 
 bleu = evaluate.load("bleu")
 
-model = MT5ForConditionalGeneration.from_pretrained("google/mt5-small")
-tokenizer = T5Tokenizer.from_pretrained("google/mt5-small")
+model = MT5ForConditionalGeneration.from_pretrained(MODEL)
+tokenizer = T5Tokenizer.from_pretrained(MODEL)
 
 # new tokens
 new_tokens = ["<LOC>","</LOC>","<ORG>","</ORG>","<PERSON>","</PERSON>"]
@@ -43,9 +39,6 @@ model.resize_token_embeddings(len(tokenizer))
 
 def compute_metrics(eval_preds):
     preds, labels = eval_preds
-
-    print(preds)
-    print(labels)
     
     if isinstance(preds, tuple):
         preds = preds[0]
@@ -60,7 +53,7 @@ def compute_metrics(eval_preds):
     label_str = tokenizer.batch_decode(labels, skip_special_tokens=True)
     # print(f"\nCalculating BLEU\n")
     bleu_output = bleu.compute(predictions=pred_str, references=label_str, max_order=4)
-    with open(OUT_DIR+"/devel-predictions.txt", "w") as f:
+    with open(OUT_DIR+"/devel-predictions.txt", "w", encoding="utf-8") as f:
         for sentence in pred_str:
             f.write(sentence + "\n")
     return {"bleu": round(np.mean(bleu_output["bleu"])*100, 2)}
@@ -74,14 +67,12 @@ def process_data_to_model_inputs(batch):
   batch["labels"] = inputs.labels
   return batch
 
-# data = load_json("Data/preprocessed/train/de/train_NER.jsonl")
 
-data = load_json("Dataset/train.jsonl")
+data = load_json(DATASET_PATH + "train.jsonl")
 
 #test
-data = data[0:100]
+# data = data[0:100]
 
-# file_data = {"src": [item["source"] for item in data], "trg": [item["target"] for item in data]}
 file_data = {
     "src": [item["src"] for item in data],
     "trg": [item["trg"] for item in data]
@@ -135,7 +126,6 @@ training_args = Seq2SeqTrainingArguments(
     learning_rate=0.0001,
     weight_decay=0.01,
     generation_max_length=128,
-    fp16=True,
     load_best_model_at_end=True,
     predict_with_generate=True,
     auto_find_batch_size=True,

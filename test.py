@@ -1,6 +1,8 @@
-from transformers import MT5ForConditionalGeneration, T5Tokenizer
+# Define a string in Japanese
+japanese_text = "こんにちは、世界！"
 
-model = MT5ForConditionalGeneration.from_pretrained("google/mt5-small", use_auth_token=False, trust_remote_code=False)
-print(model.config)
-
-tokenizer = T5Tokenizer.from_pretrained("google/mt5-small")
+# Check if a substring is present
+if "世界" in japanese_text:
+    print("Substring found!")
+else:
+    print("Substring not found!")

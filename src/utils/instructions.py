@@ -4,8 +4,8 @@ def add_task_instructions(data, task_type="translation"):
     preprocessed_data = []
 
     for item in data:
-        source_locale = LOCALE_MAP.get(item['source_locale'], item['source_locale'])
-        target_locale = LOCALE_MAP.get(item['target_locale'], item['target_locale'])
+        source_locale = LOCALE_MAP.get(item['source_locale'])
+        target_locale = LOCALE_MAP.get(item['target_locale'])
 
         if task_type == "NER":  # NER task
             task_instruction = f"recognize {source_locale} named entities: "

@@ -1,11 +1,17 @@
 import os
 import glob
-from src.utils.filters import apply_all_filterings
-from src.utils.ner_tags import add_ner_tags, initialize_spacy_models, remove_and_replace_tags, remove_non_matching_tags, build_ner_dataset
-from src.utils.instructions import add_task_instructions
-from src.utils.utils import load_json, save_json
-from config import RAW_TRAIN_PATH, PREPROCESSED_TRAIN_PATH, DATASET_PATH
+from utils.filters import apply_all_filterings
+from utils.ner_tags import add_ner_tags, initialize_spacy_models, remove_and_replace_tags, remove_non_matching_tags, build_ner_dataset
+from utils.instructions import add_task_instructions
+from utils.utils import load_json, save_json
+from config import REFERENCES_PATH, PREPROCESSED_PATH, DATASET_PATH
 from tqdm import tqdm
+
+RAW_TRAIN_PATH = os.path.join(REFERENCES_PATH, "train")
+os.makedirs(RAW_TRAIN_PATH, exist_ok=True)
+
+PREPROCESSED_TRAIN_PATH = os.path.join(PREPROCESSED_PATH, "train")
+os.makedirs(PREPROCESSED_TRAIN_PATH, exist_ok=True)
 
 def process_language_data(data):
     data = apply_all_filterings(data)
@@ -26,6 +32,7 @@ def process_language_folder(input_folder, output_folder):
     initialize_spacy_models()
 
     #NER recognization task - add NE tags on the target side
+    #Right now, only recognize entities in English (need to modify if make available for all)
     ner_data = build_ner_dataset(preprocessed_data)
     ner_tagged_target_data = add_ner_tags(ner_data, ner_target="target")
     ner_tagged_target_data = remove_and_replace_tags(ner_tagged_target_data, ner_target="target")

@@ -1,5 +1,5 @@
 from config import NER_TAGS, CLOSED_NER_TAGS, NER_TAGS_REPLACING_STYLE_1, NER_TAGS_REPLACING_STYLE_2, LOCALE_MAP_1, LOCALE_MAP_2
-from src.utils.utils import remove_gap
+from utils.utils import remove_gap
 import spacy
 
 nlp_models = {}
@@ -8,9 +8,9 @@ def initialize_spacy_models():
     global nlp_models
     try:
         nlp_models['en'] = spacy.load("en_core_web_sm")
-        target_languages = ['es', 'de', 'fr', 'it', 'ja'] 
-        for lang in target_languages:
-            nlp_models[lang] = spacy.load(f"{lang}_core_news_sm") 
+        # target_languages = ['es', 'de', 'fr', 'it', 'ja'] 
+        # for lang in target_languages:
+        #     nlp_models[lang] = spacy.load(f"{lang}_core_news_sm") 
     except OSError as e:
         print("Ensure the SpaCy models for the respective languages are installed.")
         raise e

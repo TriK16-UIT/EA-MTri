@@ -1,7 +1,9 @@
 #PATH
-RAW_TRAIN_PATH = "Data/raw/train"
-PREPROCESSED_TRAIN_PATH = "Data/preprocessed/train"
-DATASET_PATH = "Dataset"
+DATASET_PATH = "dataset"
+REFERENCES_PATH = "data/references"
+PREDICTION_PATH = "data/predictions"
+PREPROCESSED_PATH = "data/preprocessed"
+
 #CONST
 LOCALE_MAP = {
     'en': 'English',
@@ -49,3 +51,7 @@ NER_TAGS_REPLACING_STYLE_2 = [
             ("<PER>", "<PERSON>"), ("</PER>", "</PERSON>"),
             ("<MISC>", ""), ("</MISC>", "")
         ]
+
+TARGET_LANGUAGES = [
+    "ar_AE", "de_DE", "es_ES", "fr_FR", "it_IT", "ja_JP"
+]
